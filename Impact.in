@@ -1,0 +1,38 @@
+# Impact Simulation script
+
+read_restart restart_equilibratedg_system.equil #read equilibrated system
+
+#------------------Force Fields--------------
+
+pair_style hybrid airebo 3.0 eam/alloy morse 2.5 lj/cut 2.5
+pair_coeff * * airebo CH.airebo C NULL NULL
+pair_coeff * * eam/alloy Al99.eam.alloy NULL NULL Al
+pair_coeff 1*2 3 morse 0.4691 1.738 2.246 
+pair_coeff 1 2 lj/cut 1 1 2.5
+pair_coeff 2 2 none
+
+
+compute keproj projectile ke #compute kinetic energy of projectile
+compute keatom all ke/atom
+compute peatom all pe/atom 
+variable kb equal 8.671333262145e-5
+variable alltemp atom (2*c_keatom)/(3*v_kb) #compute temperature of atoms
+
+reset_timestep 0
+timestep 0.0005 # smaller timestep due to high velocities
+
+thermo 100
+thermo_style custom step cpu temp pe vol etotal ke c_keproj 
+dump RESULTS all custom 100 RESULTS_*.cfg id type x y z vx vy vz fx fy fz c_keatom v_alltemp v_blocktemp
+thermo_modify lost ignore flush yes
+run 200
+
+velocity projectile set 0.0 80.0 0.0 units box # specify linear velocity
+
+fix 1 all nve
+fix 2 all momentum 1 angular
+fix 3 projectile rigid/nve single # specify projectile as rigid
+fix 4 fixedatoms move linear 0 0 0 # fix atoms for support
+fix 5 thermoatoms temp/rescale 25 300.0 300 0.02 0.5 # maintain a temperature of 300K to create a heat sink
+
+run 5000

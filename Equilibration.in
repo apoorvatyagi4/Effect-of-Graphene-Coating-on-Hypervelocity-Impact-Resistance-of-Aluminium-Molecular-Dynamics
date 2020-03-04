@@ -1,0 +1,66 @@
+# Equilibration script
+
+# Atom Definition
+
+units metal
+dimension 3
+boundary p f p
+atom_style full # to consider molecular effects into account
+
+# Simulation box and geometry modeling
+
+read_data geoinput.data # read geometry data file
+
+group graphene type 1 # specify atom number
+group projectile type 2
+group alblock type 3
+
+region fixedatoms block INF INF 64 68 INF INF units box # select atoms to create fixedatoms for support
+group fixedatoms region fixedatoms
+
+region thermoatoms block INF INF 59 63 INF INF units box # select atoms to create heat sink
+group thermoatoms region thermoatoms
+
+# ForceFields
+
+pair_style hybrid airebo 3.0 eam/alloy morse 2.5 lj/cut 2.5
+pair_coeff * * airebo CH.airebo C NULL NULL
+pair_coeff * * eam/alloy Al99.eam.alloy NULL NULL Al
+pair_coeff 1*2 3 morse 0.4691 1.738 2.246 
+pair_coeff 1 2 lj/cut 1 1 2.5
+pair_coeff 2 2 none # since projectile is rigid
+
+# Minimization
+
+min_style cg
+minimize 1.0e-10 1.0e-10 1000 10000
+
+# Equilibration
+
+velocity all create 300 1234567 mom yes rot yes sum no dist gaussian
+reset_timestep 0
+timestep 0.0005 # smaller timestep for better accuracy
+
+fix 1 all nve
+fix 2 all momentum 1 linear 1 1 1
+fix 3 projectile move linear 0 0 0
+fix 4 all temp/rescale 25 300.0 300 0.02 0.5 # to maintain a temp of 300K
+fix 5 projectile rigid single
+fix 6 fixedatoms move linear 0 0 0
+
+thermo 100
+thermo_style custom step lx ly lz press pxx pyy pzz pe temp
+
+run 50000
+
+unfix 1
+unfix 2
+unfix 3 
+unfix 4
+unfix 5 
+unfix 6
+
+
+write_restart restart_equilibratedg_system.equil # input file for impact simuations
+
+write_data equilibrated.data # to view equilibrated system
