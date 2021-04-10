@@ -1,5 +1,5 @@
 # Effect-of-Graphene-Coating-on-Hypervelocity-Impact-Resistance-of-Aluminium-Molecular-Dynamics
-Code is written in LAMMPS and Pyhton.
+Code is written in LAMMPS and Python.
 
 
 Hypervelocity is very high velocity, approximately over 3,000 meters per second. This is especially
